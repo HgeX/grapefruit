@@ -8,6 +8,10 @@ public interface CommandCondition<S> {
 
     void test(final CommandContext<S> context) throws UnfulfilledConditionException;
 
+    default boolean isContextFree() {
+        return false;
+    }
+
     @SafeVarargs
     static <S> CommandCondition<S> and(final CommandCondition<S>... conditions) {
         return new AndCondition<>(List.of(conditions));

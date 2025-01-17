@@ -4,11 +4,10 @@ import grapefruit.command.dispatcher.CommandContext;
 
 import java.util.List;
 
-final class AndCondition<S> implements CommandCondition<S> {
-    private final List<CommandCondition<S>> conditions;
+final class AndCondition<S> extends AbstractMultiCondition<S> {
 
     AndCondition(final List<CommandCondition<S>> conditions) {
-        this.conditions = conditions;
+        super(conditions);
     }
 
     @Override

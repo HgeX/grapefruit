@@ -4,13 +4,10 @@ import grapefruit.command.dispatcher.CommandContext;
 
 import java.util.List;
 
-import static java.util.Objects.requireNonNull;
-
-final class OrCondition<S> implements CommandCondition<S> {
-    private final List<CommandCondition<S>> conditions;
+final class OrCondition<S> extends AbstractMultiCondition<S> {
 
     OrCondition(final List<CommandCondition<S>> conditions) {
-        this.conditions = requireNonNull(conditions, "conditions cannot be null");
+        super(conditions);
     }
 
     @Override

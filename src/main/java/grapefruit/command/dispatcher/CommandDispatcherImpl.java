@@ -96,10 +96,11 @@ final class CommandDispatcherImpl<S> implements CommandDispatcher<S> {
         final CommandInputTokenizer input = CommandInputTokenizer.wrap(command);
         final CommandModule<S> cmd = this.commandGraph.query(input);
         final CommandContext<S> context = createContext(source, requireChain(cmd), ContextDecorator.Mode.DISPATCH);
+        testRequiredConditions(context, true);
         final CommandParseResult<S> parseResult = processCommand(context, input);
         parseResult.throwCaptured();
 
-        testRequiredConditions(context);
+        testRequiredConditions(context, false);
         executeAndInvokeListeners(context, cmd);
     }
 
@@ -203,12 +204,13 @@ final class CommandDispatcherImpl<S> implements CommandDispatcher<S> {
     }
 
     // Test conditions of literal and required arguments
-    private static <S> void testRequiredConditions(final CommandContext<S> context) throws UnfulfilledConditionException {
+    private static <S> void testRequiredConditions(final CommandContext<S> context, final boolean contextFree) throws UnfulfilledConditionException {
         final CommandChain<S> chain = context.chain();
         final List<CommandCondition<S>> conditions = Stream.concat(chain.route().stream(), chain.arguments().stream())
                 .map(CommandArgument::condition)
                 .filter(Optional::isPresent)
                 .map(Optional::orElseThrow)
+                .filter(x -> x.isContextFree() == contextFree)
                 .toList();
 
         for (final CommandCondition<S> condition : conditions) condition.test(context);
