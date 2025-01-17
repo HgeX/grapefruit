@@ -4,18 +4,21 @@ import grapefruit.command.argument.condition.CommandCondition;
 import grapefruit.command.argument.mapper.ArgumentMapper;
 import grapefruit.command.util.key.Keyed;
 
-import java.util.Optional;
+import java.util.Collection;
+import java.util.List;
 import java.util.Set;
 
 public interface CommandArgument<S, T> extends Keyed<T> {
 
     String name();
 
-    Optional<CommandCondition<S>> condition();
+    List<CommandCondition<S>> conditions();
 
     interface Builder<S, T, C extends CommandArgument<S, T>, B extends Builder<S, T, C, B>> {
 
         B expect(final CommandCondition<S> condition);
+
+        B expect(final Collection<CommandCondition<S>> conditions);
 
         C build();
     }

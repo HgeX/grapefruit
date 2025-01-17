@@ -9,20 +9,22 @@ import grapefruit.command.util.ToStringer;
 import grapefruit.command.util.key.Key;
 import org.jetbrains.annotations.Nullable;
 
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.HashSet;
-import java.util.Optional;
+import java.util.List;
 import java.util.Set;
 
 import static java.util.Objects.requireNonNull;
 
 public abstract class CommandArgumentImpl<S, T> implements CommandArgument<S, T> {
     private final Key<T> key;
-    private final @Nullable CommandCondition<S> condition;
+    private final List<CommandCondition<S>> conditions;
 
-    protected CommandArgumentImpl(final Key<T> key, final @Nullable CommandCondition<S> condition) {
+    protected CommandArgumentImpl(final Key<T> key, final List<CommandCondition<S>> conditions) {
         this.key = requireNonNull(key, "key cannot be null");
-        this.condition = condition;
+        this.conditions = requireNonNull(conditions, "conditions cannot be null");
     }
 
     @Override
@@ -36,15 +38,15 @@ public abstract class CommandArgumentImpl<S, T> implements CommandArgument<S, T>
     }
 
     @Override
-    public Optional<CommandCondition<S>> condition() {
-        return Optional.ofNullable(this.condition);
+    public List<CommandCondition<S>> conditions() {
+        return List.copyOf(this.conditions);
     }
 
     static final class Literal<S> extends CommandArgumentImpl<S, String> implements CommandArgument.Literal<S> {
         private final Set<String> aliases;
 
-        Literal(final Key<String> key, final @Nullable CommandCondition<S> condition, final Set<String> aliases) {
-            super(key, condition);
+        Literal(final Key<String> key, final List<CommandCondition<S>> conditions, final Set<String> aliases) {
+            super(key, conditions);
             this.aliases = requireNonNull(aliases, "aliases cannot be null");
         }
 
@@ -57,7 +59,7 @@ public abstract class CommandArgumentImpl<S, T> implements CommandArgument<S, T>
         public String toString() {
             return ToStringer.create(this)
                     .append("key", key())
-                    .append("permission", condition())
+                    .append("permission", conditions())
                     .append("aliases", this.aliases)
                     .toString();
         }
@@ -66,8 +68,8 @@ public abstract class CommandArgumentImpl<S, T> implements CommandArgument<S, T>
     static abstract class Dynamic<S, T> extends CommandArgumentImpl<S, T> implements CommandArgument.Dynamic<S, T> {
         private final ArgumentMapper<S, T> mapper;
 
-        Dynamic(final Key<T> key, final @Nullable CommandCondition<S> condition, final ArgumentMapper<S, T> mapper) {
-            super(key, condition);
+        Dynamic(final Key<T> key, final List<CommandCondition<S>> conditions, final ArgumentMapper<S, T> mapper) {
+            super(key, conditions);
             this.mapper = requireNonNull(mapper, "mapper cannot be null");
         }
 
@@ -79,8 +81,8 @@ public abstract class CommandArgumentImpl<S, T> implements CommandArgument<S, T>
 
     static final class Required<S, T> extends Dynamic<S, T> implements CommandArgument.Required<S, T> {
 
-        Required(final Key<T> key, final @Nullable CommandCondition<S> condition, final ArgumentMapper<S, T> mapper) {
-            super(key, condition, mapper);
+        Required(final Key<T> key, List<CommandCondition<S>> conditions, final ArgumentMapper<S, T> mapper) {
+            super(key, conditions, mapper);
         }
 
         @Override
@@ -97,7 +99,7 @@ public abstract class CommandArgumentImpl<S, T> implements CommandArgument<S, T>
         public String toString() {
             return ToStringer.create(this)
                     .append("key", key())
-                    .append("permission", condition())
+                    .append("permission", conditions())
                     .append("mapper", mapper())
                     .toString();
         }
@@ -107,8 +109,8 @@ public abstract class CommandArgumentImpl<S, T> implements CommandArgument<S, T>
         private final char shorthand;
         private final boolean isPresence;
 
-        Flag(final Key<T> key, final @Nullable CommandCondition<S> condition, final ArgumentMapper<S, T> mapper, final char shorthand, final boolean isPresence) {
-            super(key, condition, mapper);
+        Flag(final Key<T> key, List<CommandCondition<S>> conditions, final ArgumentMapper<S, T> mapper, final char shorthand, final boolean isPresence) {
+            super(key, conditions, mapper);
             this.shorthand = shorthand;
             this.isPresence = isPresence;
         }
@@ -137,7 +139,7 @@ public abstract class CommandArgumentImpl<S, T> implements CommandArgument<S, T>
         public String toString() {
             return ToStringer.create(this)
                     .append("key", key())
-                    .append("permission", condition())
+                    .append("permission", conditions())
                     .append("mapper", mapper())
                     .append("shorthand", this.shorthand)
                     .append("presence", this.isPresence)
@@ -147,7 +149,7 @@ public abstract class CommandArgumentImpl<S, T> implements CommandArgument<S, T>
 
     static abstract class Builder<S, T, C extends CommandArgument<S, T>, B extends CommandArgument.Builder<S, T, C, B>> implements CommandArgument.Builder<S, T, C, B> {
         protected final Key<T> key;
-        protected @Nullable CommandCondition<S> condition;
+        protected final List<CommandCondition<S>> conditions = new ArrayList<>();
 
         Builder(final Key<T> key) {
             this.key = requireNonNull(key, "key cannot be null");
@@ -157,7 +159,15 @@ public abstract class CommandArgumentImpl<S, T> implements CommandArgument<S, T>
 
         @Override
         public B expect(final CommandCondition<S> condition) {
-            this.condition = requireNonNull(condition, "condition cannot be null");
+            requireNonNull(condition, "condition cannot be null");
+            this.conditions.add(condition);
+            return self();
+        }
+
+        @Override
+        public B expect(final Collection<CommandCondition<S>> conditions) {
+            requireNonNull(conditions, "conditions cannot be null");
+            this.conditions.addAll(conditions);
             return self();
         }
     }
@@ -182,7 +192,7 @@ public abstract class CommandArgumentImpl<S, T> implements CommandArgument<S, T>
 
         @Override
         public CommandArgument.Literal<S> build() {
-            return new Literal<>(this.key, this.condition, this.aliases);
+            return new Literal<>(this.key, this.conditions, this.aliases);
         }
     }
 
@@ -206,7 +216,7 @@ public abstract class CommandArgumentImpl<S, T> implements CommandArgument<S, T>
 
         @Override
         public CommandArgument.Required<S, T> build() {
-            return new Required<>(this.key, this.condition, this.mapper);
+            return new Required<>(this.key, this.conditions, this.mapper);
         }
     }
 
@@ -239,7 +249,7 @@ public abstract class CommandArgumentImpl<S, T> implements CommandArgument<S, T>
 
         @Override
         public CommandArgument.Flag<S, T> build() {
-            return new Flag<>(this.key, this.condition, this.mapper, this.shorthand, this.isPresence);
+            return new Flag<>(this.key, this.conditions, this.mapper, this.shorthand, this.isPresence);
         }
     }
 

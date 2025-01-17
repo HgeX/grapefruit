@@ -207,9 +207,8 @@ final class CommandDispatcherImpl<S> implements CommandDispatcher<S> {
     private static <S> void testRequiredConditions(final CommandContext<S> context, final boolean contextFree) throws UnfulfilledConditionException {
         final CommandChain<S> chain = context.chain();
         final List<CommandCondition<S>> conditions = Stream.concat(chain.route().stream(), chain.arguments().stream())
-                .map(CommandArgument::condition)
-                .filter(Optional::isPresent)
-                .map(Optional::orElseThrow)
+                .map(CommandArgument::conditions)
+                .flatMap(Collection::stream)
                 .filter(x -> x.isContextFree() == contextFree)
                 .toList();
 
@@ -310,11 +309,7 @@ final class CommandDispatcherImpl<S> implements CommandDispatcher<S> {
          * early like we do with literal and required arguments. So,
          * do the check now.
          */
-        final Optional<CommandCondition<S>> condition = flag.condition();
-        if (condition.isPresent()) {
-            condition.orElseThrow().test(context);
-        }
-
+        for (final CommandCondition<S> condition : flag.conditions()) condition.test(context);
         consumeArgument(flag, context, input, builder);
     }
 
