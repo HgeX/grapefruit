@@ -33,7 +33,7 @@ public class CommandGraph<S> {
         InternalCommandNode<S> node = this.rootNode;
         for (final Iterator<CommandArgument.Literal<S>> iter = chain.route().iterator(); iter.hasNext();) {
             final CommandArgument.Literal<S> literal = iter.next();
-            boolean isLast = !iter.hasNext();
+            final boolean isLast = !iter.hasNext();
 
             final Optional<InternalCommandNode<S>> childCandidate = queryChildOf(node, literal);
             if (childCandidate.isPresent()) {
@@ -103,7 +103,7 @@ public class CommandGraph<S> {
         throw generateNoSuchCommand(node, input, "");
     }
 
-    public InternalCommandNode<S> query0(final CommandInputTokenizer input) throws NoSuchCommandException {
+    private InternalCommandNode<S> query0(final CommandInputTokenizer input) throws NoSuchCommandException {
         InternalCommandNode<S> node = this.rootNode;
         try {
             while (input.canReadNonWhitespace()) {
